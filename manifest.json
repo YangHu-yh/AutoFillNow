@@ -1,0 +1,15 @@
+{
+    "name": "Auto Fill Now",
+    "description": "This extension fills up the form automatically.",
+    "version": "1.0",
+    "manifest_version": 3,
+    "action": {
+      "default_popup": "hello.html",
+      "default_title": "Autofilling Now",
+      "default_icon": "hello_extensions.png"
+    },
+    "permissions": [
+      "activeTab",
+      "http://*/*","https://*/*"
+    ]
+  }
