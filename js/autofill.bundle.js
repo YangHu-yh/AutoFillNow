@@ -80,23 +80,12 @@ class AutoFill {
             case CompanyType.lever:
                 this.upload_lever();
                 break;
-            case CompanyType.linkedin:
-                this.upload_linkedin();
-                break;
         }   
         
     }
 
     fill_resume() {
         this.get_forms();
-        
-        // Handle LinkedIn specific form filling
-        if (this.job_portal_type === CompanyType.linkedin) {
-            this.fill_linkedin_fields();
-            return;
-        }
-
-        // Original form filling logic for other job portals
         var labels = this.form.getElementsByTagName("label");
         for (var i = 0; i < labels.length; i++) {
             var label = labels[i].parentNode.innerText.split("\n")[0]
@@ -254,141 +243,6 @@ class AutoFill {
                 element.files = this.cover_letter.files;
                 element.dispatchEvent(new Event("change", { bubbles: !0, cancelable: !1 }));
             }
-        });
-    }
-
-    upload_linkedin() {
-        // LinkedIn's file upload is handled through their own interface
-        // We'll focus on filling the form fields
-        Array.from(this.form.elements).forEach(element => {
-            if (element.type === "file") {
-                if (element.name.toLowerCase().includes("resume")) {
-                    element.files = this.resume_file.files;
-                    element.dispatchEvent(new Event("change", { bubbles: true, cancelable: true }));
-                }
-                if (element.name.toLowerCase().includes("cover") && this.cover_letter !== null) {
-                    element.files = this.cover_letter.files;
-                    element.dispatchEvent(new Event("change", { bubbles: true, cancelable: true }));
-                }
-            }
-        });
-    }
-
-    fill_linkedin_fields() {
-        // LinkedIn specific field mapping
-        const fieldMappings = {
-            'first-name': 'firstname',
-            'last-name': 'lastname',
-            'email': 'email',
-            'phone': 'phone',
-            'city': 'city',
-            'state': 'state',
-            'zip': 'zip',
-            'country': 'country',
-            'job-title': 'title',
-            'company': 'company',
-            'school': 'school',
-            'degree': 'degree',
-            'field-of-study': 'major'
-        };
-
-        // Find all input fields
-        const inputs = this.form.querySelectorAll('input, select, textarea');
-        inputs.forEach(input => {
-            const fieldName = input.name || input.id;
-            if (!fieldName) return;
-
-            // Check if this field has a mapping
-            for (const [linkedinField, resumeField] of Object.entries(fieldMappings)) {
-                if (fieldName.toLowerCase().includes(linkedinField)) {
-                    if (input.type === 'text' || input.type === 'email' || input.type === 'tel') {
-                        this.fill_text_field(input, resumeField);
-                    } else if (input.type === 'select-one') {
-                        this.fill_select_field(input, resumeField);
-                    }
-                    break;
-                }
-            }
-        });
-
-        // Handle LinkedIn's dynamic form sections
-        this.fill_linkedin_experience();
-        this.fill_linkedin_education();
-    }
-
-    fill_linkedin_experience() {
-        if (!this.resume_json.experiences) return;
-
-        // Find the experience section
-        const experienceSection = this.form.querySelector('[data-form-name="experience"]');
-        if (!experienceSection) return;
-
-        this.resume_json.experiences.forEach((experience, index) => {
-            if (index > 0) {
-                // Click "Add experience" button if not the first experience
-                const addButton = experienceSection.querySelector('button[aria-label*="Add experience"]');
-                if (addButton) addButton.click();
-            }
-
-            // Wait for the form to be ready
-            setTimeout(() => {
-                const inputs = experienceSection.querySelectorAll('input, select');
-                inputs.forEach(input => {
-                    const fieldName = input.name || input.id;
-                    if (!fieldName) return;
-
-                    if (fieldName.toLowerCase().includes('title')) {
-                        this.fill_text_field(input, 'title');
-                    } else if (fieldName.toLowerCase().includes('company')) {
-                        this.fill_text_field(input, 'company');
-                    } else if (fieldName.toLowerCase().includes('start-date')) {
-                        input.value = experience.startdate;
-                        input.dispatchEvent(new Event("change", { bubbles: true, cancelable: true }));
-                    } else if (fieldName.toLowerCase().includes('end-date')) {
-                        input.value = experience.enddate;
-                        input.dispatchEvent(new Event("change", { bubbles: true, cancelable: true }));
-                    }
-                });
-            }, 500 * index); // Add delay for each experience to allow form to update
-        });
-    }
-
-    fill_linkedin_education() {
-        if (!this.resume_json.educations) return;
-
-        // Find the education section
-        const educationSection = this.form.querySelector('[data-form-name="education"]');
-        if (!educationSection) return;
-
-        this.resume_json.educations.forEach((education, index) => {
-            if (index > 0) {
-                // Click "Add education" button if not the first education
-                const addButton = educationSection.querySelector('button[aria-label*="Add education"]');
-                if (addButton) addButton.click();
-            }
-
-            // Wait for the form to be ready
-            setTimeout(() => {
-                const inputs = educationSection.querySelectorAll('input, select');
-                inputs.forEach(input => {
-                    const fieldName = input.name || input.id;
-                    if (!fieldName) return;
-
-                    if (fieldName.toLowerCase().includes('school')) {
-                        this.fill_text_field(input, 'school');
-                    } else if (fieldName.toLowerCase().includes('degree')) {
-                        this.fill_text_field(input, 'degreetype');
-                    } else if (fieldName.toLowerCase().includes('field-of-study')) {
-                        this.fill_text_field(input, 'major');
-                    } else if (fieldName.toLowerCase().includes('start-date')) {
-                        input.value = education.startdate;
-                        input.dispatchEvent(new Event("change", { bubbles: true, cancelable: true }));
-                    } else if (fieldName.toLowerCase().includes('end-date')) {
-                        input.value = education.enddate;
-                        input.dispatchEvent(new Event("change", { bubbles: true, cancelable: true }));
-                    }
-                });
-            }, 500 * index); // Add delay for each education to allow form to update
         });
     }
 }
