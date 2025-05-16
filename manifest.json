@@ -3,7 +3,8 @@
     "description": "Autofill is a open source extension that allows you to fill in job forms with one click.",
     "version": "0.0.1",
     "manifest_version": 3,
-    "permissions": ["tabs", "activeTab", "scripting", "storage"],
+    "permissions": ["tabs", "activeTab", "scripting", "storage", "contextMenus"],
+    "host_permissions": ["<all_urls>"],
     "action": {
         "default_title": "Click to show an alert"
     },
@@ -17,20 +18,20 @@
         "service_worker": "js/background.bundle.js"
     },
     "content_scripts": [ {
-        "matches": [ "*://*/*" ],
-        "js": ["js/autofill.bundle.js", "js/companydata.bundle.js", "js/userdata.bundle.js", "js/popup.bundle.js", 
+        "matches": [ "<all_urls>" ],
+        "js": ["js/debug.bundle.js", "js/autofill.bundle.js", "js/companydata.bundle.js", "js/userdata.bundle.js", "js/popup.bundle.js", 
         "js/jquery.min.js", "js/popper.min.js", "js/bootstrap.min.js"],
         "css": ["css/popup.css"],
         "run_at": "document_start"
     },
     {
-        "matches": [ "*://*/*" ],
+        "matches": [ "<all_urls>" ],
         "js": ["js/manager.bundle.js"],
         "run_at": "document_end"
     }],
     "web_accessible_resources": [ {
-        "resources": [ "data/*", "index.html", "popup.html", "js/*", "css/*", "images/*" ],
-        "matches": [ "*://*/*" ]
+        "resources": [ "data/*", "index.html", "popup.html", "debug.html", "js/*", "css/*", "images/*" ],
+        "matches": [ "<all_urls>" ]
     } ],
     "file_system_provider_capabilities": {
         "configurable": true,
