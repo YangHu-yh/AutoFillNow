@@ -34,6 +34,7 @@
     font-size: 13px;
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     color: #000;
+    margin: 2px;
 }
 
 .autofill_toast-header {
@@ -61,7 +62,9 @@
     line-height: 1;
     color: #000;
     text-shadow: 0 1px 0 #fff;
-    opacity: .5
+    opacity: .5;
+    margin-left: .5rem !important;
+    margin-bottom: .25rem !important
 }
 
 .autofill_close:hover {
@@ -106,8 +109,32 @@ button.autofill_close {
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     cursor: pointer;
     border-color: #e7e7e7;
+    padding-left: 3em;
+    padding-right: 3em;
 }
   
 .autofill_btn:hover {
     background: #244850;
+}
+
+.autofill_form-group {
+    margin-top: .5rem;
+    margin-bottom: .5rem;
+}
+
+.profile-selector-label {
+    font-size: 0.9em;
+    margin-bottom: 0.25rem;
+}
+
+#profileSelectorPopup {
+    width: 100%;
+    padding: 0.25rem;
+    font-size: 0.9em;
+    border-radius: 3px;
+    border: 1px solid #ced4da;
+}
+
+.button-container {
+    margin-top: .5rem;
 }

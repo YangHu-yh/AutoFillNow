@@ -3,7 +3,7 @@
     "description": "Autofill is a open source extension that allows you to fill in job forms with one click.",
     "version": "0.0.1",
     "manifest_version": 3,
-    "permissions": ["tabs", "activeTab", "scripting", "storage", "contextMenus"],
+    "permissions": ["tabs", "activeTab", "scripting", "storage", "contextMenus", "notifications"],
     "host_permissions": ["<all_urls>"],
     "action": {
         "default_title": "Click to show an alert"
