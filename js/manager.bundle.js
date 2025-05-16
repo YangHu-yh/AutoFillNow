@@ -11,9 +11,78 @@ class ExeManager {
             this.errors = [];
             this.debugMode = true; // Set to true to enable detailed logging
             
+            // Check if this might be a Greenhouse page
+            this.isGreenhousePage = this.checkIfGreenhousePage();
+            if (this.isGreenhousePage) {
+                this.log("Greenhouse job application page detected in ExeManager");
+            }
+            
             this.log("ExeManager initialized with URL:", currentUrl);
         } catch (error) {
             this.logError("constructor", error);
+        }
+    }
+    
+    // Helper method to check if the current page is a Greenhouse job application
+    checkIfGreenhousePage() {
+        try {
+            // Special handling for job-boards.greenhouse.io domain
+            if (this.currentUrl.includes('job-boards.greenhouse.io')) {
+                console.log("Direct match for job-boards.greenhouse.io domain");
+                return true;
+            }
+            
+            // Check URL patterns first
+            if (this.currentUrl.includes('greenhouse.io') || 
+                this.currentUrl.includes('boards.greenhouse.io') ||
+                this.currentUrl.includes('job_app?for=')) {
+                console.log("Greenhouse detected via URL pattern:", this.currentUrl);
+                return true;
+            }
+            
+            // Check for Greenhouse elements in the DOM
+            if (typeof document !== 'undefined') {
+                // Check for Apply button (common in job-boards.greenhouse.io)
+                const applyButton = document.querySelector('button[aria-label="Apply"], button.btn--pill');
+                if (applyButton) {
+                    console.log("Greenhouse detected via Apply button");
+                    return true;
+                }
+                
+                // Check for Greenhouse scripts and links
+                const greenhouseElements = document.querySelectorAll(
+                    'script[src*="greenhouse.io"], link[href*="greenhouse.io"], iframe[src*="greenhouse.io"]'
+                );
+                if (greenhouseElements.length > 0) {
+                    console.log("Greenhouse detected via page elements");
+                    return true;
+                }
+                
+                // Check for Greenhouse forms and buttons
+                const greenhouseForms = document.querySelectorAll(
+                    'form[action*="greenhouse.io"], #s3_upload_for_resume, #s3_upload_for_cover_letter, ' +
+                    'button[aria-label="Apply"], .gh-button'
+                );
+                if (greenhouseForms.length > 0) {
+                    console.log("Greenhouse detected via form elements");
+                    return true;
+                }
+                
+                // Check for Greenhouse content in the page
+                const pageContent = document.body ? document.body.textContent : '';
+                if (pageContent && (
+                    pageContent.includes('Powered by Greenhouse') || 
+                    document.querySelector('footer svg[aria-label="Greenhouse logo"]')
+                )) {
+                    console.log("Greenhouse detected via page content");
+                    return true;
+                }
+            }
+            
+            return false;
+        } catch (error) {
+            console.error("Error checking for Greenhouse page:", error);
+            return false;
         }
     }
     
@@ -39,6 +108,18 @@ class ExeManager {
             if (!this.isCompanyDataAvailable && this.companyData === null){
                 this.log("Loading company data");
                 this.isCompanyDataAvailable = true;
+                
+                // If we already detected a Greenhouse page, set the job portal type directly
+                if (this.isGreenhousePage) {
+                    this.log("Using pre-detected Greenhouse job portal type");
+                    this.companyData = {
+                        job_portal_type: 'greenhouse',
+                        company_name: this.extractCompanyNameFromUrl(),
+                        currentUrl: this.currentUrl
+                    };
+                    return this.change(); // Continue with the next step
+                }
+                
                 this.companyData = new CompanyData(this.currentUrl, this);
                 return;
             }
@@ -63,6 +144,9 @@ class ExeManager {
                 if (this.isCompanyDataAvailable && this.companyData !== null && this.companyData.job_portal_type) {
                     portalType = this.companyData.job_portal_type;
                     this.log("Using detected job portal type:", portalType);
+                } else if (this.isGreenhousePage) {
+                    portalType = 'greenhouse';
+                    this.log("Using pre-detected Greenhouse job portal type");
                 } else {
                     this.log("No specific job portal detected, using generic autofill");
                 }
@@ -100,6 +184,27 @@ class ExeManager {
         } catch (error) {
             this.logError("change", error);
             console.error("Error in ExeManager.change():", error);
+        }
+    }
+    
+    // Helper method to extract company name from URL for Greenhouse pages
+    extractCompanyNameFromUrl() {
+        try {
+            if (this.currentUrl.includes('boards.greenhouse.io/')) {
+                // Format: boards.greenhouse.io/companyname
+                return this.currentUrl.split('boards.greenhouse.io/')[1].split('/')[0];
+            }
+            
+            if (this.currentUrl.includes('job_app?for=')) {
+                // Format: job_app?for=companyname
+                return this.currentUrl.split('job_app?for=')[1].split('&')[0];
+            }
+            
+            // Default to hostname if we can't extract company name
+            const urlObj = new URL(this.currentUrl);
+            return urlObj.hostname;
+        } catch (e) {
+            return 'unknown';
         }
     }
     

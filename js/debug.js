@@ -2,21 +2,72 @@
 const DebugUtil = {
     logs: [],
     errors: [],
+    showNonCriticalErrors: false, // Default to hiding non-critical errors
     
     // Load logs from Chrome storage
     loadLogs: function() {
-        chrome.storage.local.get(['autofill_debug_logs', 'autofill_debug_errors'], (result) => {
+        chrome.storage.local.get(['autofill_debug_logs', 'autofill_debug_errors', 'autofill_show_non_critical'], (result) => {
             this.logs = result.autofill_debug_logs || [];
             this.errors = result.autofill_debug_errors || [];
+            this.showNonCriticalErrors = result.autofill_show_non_critical || false;
             
             // Update UI
             this.updateLogsUI();
             this.updateErrorsUI();
             
             // Update counts
-            document.getElementById('log-count').textContent = this.logs.length;
-            document.getElementById('error-count').textContent = this.errors.length;
+            this.updateCounts();
         });
+    },
+    
+    // Update the error and log counts in the UI
+    updateCounts: function() {
+        // Filter out non-critical errors for the count if needed
+        const errorCount = this.showNonCriticalErrors 
+            ? this.errors.length 
+            : this.errors.filter(error => !this.isNonCriticalError(error.message)).length;
+            
+        document.getElementById('log-count').textContent = this.logs.length;
+        document.getElementById('error-count').textContent = errorCount;
+        
+        // Update the filter toggle button text
+        const filterBtn = document.getElementById('toggleNonCritical');
+        if (filterBtn) {
+            filterBtn.textContent = this.showNonCriticalErrors 
+                ? "Hide Browser Warnings" 
+                : "Show Browser Warnings";
+        }
+    },
+    
+    // Toggle showing/hiding non-critical errors
+    toggleNonCriticalErrors: function() {
+        this.showNonCriticalErrors = !this.showNonCriticalErrors;
+        
+        // Save preference
+        chrome.storage.local.set({
+            autofill_show_non_critical: this.showNonCriticalErrors
+        });
+        
+        // Update UI
+        this.updateErrorsUI();
+        this.updateCounts();
+    },
+    
+    // Check if an error message is a non-critical browser warning
+    isNonCriticalError: function(message) {
+        if (!message) return false;
+        
+        // List of known non-critical browser warnings
+        const nonCriticalPatterns = [
+            'ResizeObserver loop', 
+            'Script error',
+            'Load failed',
+            'Cannot read properties of null',
+            'Extension context invalidated',
+            'The specified value is non-finite'
+        ];
+        
+        return nonCriticalPatterns.some(pattern => message.includes(pattern));
     },
     
     // Clear logs in Chrome storage
@@ -31,8 +82,7 @@ const DebugUtil = {
                 this.updateErrorsUI();
                 
                 // Update counts
-                document.getElementById('log-count').textContent = '0';
-                document.getElementById('error-count').textContent = '0';
+                this.updateCounts();
             });
         }
     },
@@ -82,13 +132,19 @@ const DebugUtil = {
         const container = document.getElementById('error-container');
         container.innerHTML = '';
         
-        if (this.errors.length === 0) {
+        // Filter errors if needed
+        let errorsToShow = this.errors;
+        if (!this.showNonCriticalErrors) {
+            errorsToShow = this.errors.filter(error => !this.isNonCriticalError(error.message));
+        }
+        
+        if (errorsToShow.length === 0) {
             container.innerHTML = '<div class="alert alert-success">No errors recorded.</div>';
             return;
         }
         
         // Sort errors by timestamp (newest first)
-        const sortedErrors = [...this.errors].sort((a, b) => {
+        const sortedErrors = [...errorsToShow].sort((a, b) => {
             return new Date(b.timestamp) - new Date(a.timestamp);
         });
         
@@ -96,6 +152,11 @@ const DebugUtil = {
         sortedErrors.forEach(error => {
             const errorEntry = document.createElement('div');
             errorEntry.className = 'log-entry error-entry expandable';
+            
+            // Add a class for non-critical errors
+            if (this.isNonCriticalError(error.message)) {
+                errorEntry.classList.add('warning-entry');
+            }
             
             const timestamp = document.createElement('div');
             timestamp.className = 'timestamp';
@@ -344,5 +405,10 @@ document.addEventListener('DOMContentLoaded', function() {
     
     document.getElementById('exportLogs').addEventListener('click', () => {
         DebugUtil.exportLogs();
+    });
+    
+    // Add handler for the toggle non-critical errors button
+    document.getElementById('toggleNonCritical').addEventListener('click', () => {
+        DebugUtil.toggleNonCriticalErrors();
     });
 }); 

@@ -54,10 +54,65 @@ class CompanyData{
     }
 
     getJobPortalName(){
-        // Check for specific job portals first
-        if (this.currentUrl.includes('greenhouse.io')){
+        // Special handling for job-boards.greenhouse.io domain
+        if (this.currentUrl.includes('job-boards.greenhouse.io')) {
+            console.log("Direct match for job-boards.greenhouse.io domain - high priority detection");
             return CompanyType.greenhouse;
         }
+        
+        // Check for specific job portals first
+        
+        // Check for Greenhouse - expanded URL patterns
+        if (this.currentUrl.includes('greenhouse.io') || 
+            this.currentUrl.includes('boards.greenhouse.io') || 
+            this.currentUrl.includes('job_app?for=') || 
+            this.currentUrl.includes('greenhouse.io/embed')){
+            console.log("Detected Greenhouse job portal via URL pattern");
+            return CompanyType.greenhouse;
+        }
+        
+        // Check for company career pages that use Greenhouse
+        try {
+            // Check for Apply button (common in job-boards.greenhouse.io)
+            const applyButton = document.querySelector('button[aria-label="Apply"], button.btn--pill');
+            if (applyButton) {
+                console.log("Detected Greenhouse job portal via Apply button");
+                return CompanyType.greenhouse;
+            }
+            
+            // Look for Greenhouse scripts or elements in the page
+            const greenhouseElements = document.querySelectorAll(
+                'script[src*="greenhouse.io"], link[href*="greenhouse.io"], iframe[src*="greenhouse.io"]'
+            );
+            if (greenhouseElements.length > 0) {
+                console.log("Detected Greenhouse job portal via page elements");
+                return CompanyType.greenhouse;
+            }
+            
+            // Check for specific Greenhouse form elements
+            const greenhouseForms = document.querySelectorAll(
+                'form[action*="greenhouse.io"], #s3_upload_for_resume, #s3_upload_for_cover_letter, ' +
+                'button[aria-label="Apply"], .gh-button'
+            );
+            if (greenhouseForms.length > 0) {
+                console.log("Detected Greenhouse job portal via form elements");
+                return CompanyType.greenhouse;
+            }
+            
+            // Check for Greenhouse content in the page
+            const pageContent = document.body ? document.body.textContent : '';
+            if (pageContent && (
+                pageContent.includes('Powered by Greenhouse') || 
+                pageContent.includes('greenhouse.io') ||
+                document.querySelector('footer svg[aria-label="Greenhouse logo"]')
+            )) {
+                console.log("Detected Greenhouse job portal via page content");
+                return CompanyType.greenhouse;
+            }
+        } catch (e) {
+            console.error("Error checking for Greenhouse elements:", e);
+        }
+        
         if (this.currentUrl.includes('lever.co')){
             return CompanyType.lever;
         }
